@@ -1,0 +1,14 @@
+socket_server:
+  host: "localhost"
+  port: 9000
+
+web_server:
+  host: "localhost"
+  port: 8080
+
+topics:
+  - name: default_broadcast
+    mode: broadcast
+  
+  - name: default_queue
+    mode: queue

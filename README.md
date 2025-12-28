@@ -7,7 +7,11 @@ simple message service
 cd /Users/jeesubkim/Project/sms
 python3 -m unittest discover -s src/server/core/tests -t src
 
+# venv
+python3 -m venv venv
+source venv/bin/activate
 
+pip3 install -e .
 
 
 # Plan

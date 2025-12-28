@@ -1,5 +1,5 @@
+from src.exception import ConnectionIsNoneException
 from .client import SMSClient
-from .exception import ConnectionIsNoneException
 import time
 
 class SMSConsumer(SMSClient):
