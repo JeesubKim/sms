@@ -7,6 +7,7 @@ from server.system_logger import SLOG
 def read_bytes_or_create(path: str) -> bytes:
     """Read"""
     p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
     if not p.exists():
         p.write_bytes(b"")
         return b""

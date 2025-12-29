@@ -1,7 +1,9 @@
-""" System Exceptions """
-class ConnectionIsNoneException(Exception):
-    """ Conn object is None """
+"""System Exceptions"""
+
+
+class SocketIsNoneException(Exception):
+    """Conn object is None"""
+
 
 class UnexpectedModeStringValue(Exception):
-    """ Undefined Mode String Value """
-
+    """Undefined Mode String Value"""

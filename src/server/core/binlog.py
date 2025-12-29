@@ -3,6 +3,7 @@
 import os
 import zlib
 from typing import Self
+from pathlib import Path
 from dataclasses import dataclass
 from server.util.file import read_bytes_or_create, write_bytes
 from server.util.config import Server
@@ -68,13 +69,23 @@ class BinLog:
     def serialize_all(self) -> bytes:
         """Convert payload_size+transactions into bytes"""
         ret = self._payload_size.to_bytes(4, byteorder="big", signed=False)
+        index = []
         for transaction in self._transactions:
             ret += BinLog.transaction_to_bytes(transaction)
         return ret
 
+    def append_index(self):
+        """Append index info to the index file"""
+        raise NotImplementedError()
+
+    def index_all(self) -> list[int]:
+        """Reindexing all transactions"""
+        raise NotImplementedError()
+
     @staticmethod
-    def transaction_to_bytes(transaction: TransactionLog):
+    def transaction_to_bytes(transaction: TransactionLog) -> bytes:
         """Single Transaction to bytes"""
+
         transaction_bytes = transaction.header.timestamp.to_bytes(
             4, byteorder="big", signed=False
         )
@@ -117,6 +128,10 @@ class BinLog:
         """Getter"""
         return self._payload_size
 
+    def get_transactions(self) -> list[TransactionLog]:
+        """Getter"""
+        return self._transactions
+
     def cut(self, offset: int) -> Self:
         """Offset"""
         self._transactions = self._transactions[offset:]
@@ -137,13 +152,12 @@ class BinLog:
             start = ptr
             timestamp = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
             ptr += 4
-            print(ptr, timestamp)
+
             topic_length = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
             ptr += 4
-            print(topic_length)
+
             topic = data[ptr : ptr + topic_length].decode("utf-8")
             ptr += topic_length
-            print(topic)
 
             producer_name_length = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
             ptr += 4
@@ -213,9 +227,12 @@ def append_bin_reserialize_all(topic: str, data: TransactionLog):
     write_bytes(get_topic_path(topic), binlog.serialize_all())
 
 
-def get_topic_path(topic: str):
+def get_topic_path(topic: str, extension="blog"):
     """Helper function to get binlog file with topic name"""
-    return os.path.join("binlogs", f"{topic}.blog")
+
+    return os.path.join(
+        Path(__file__).resolve().parents[1], "binlogs", topic, f"{topic}.{extension}"
+    )
 
 
 if __name__ == "__main__":

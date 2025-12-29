@@ -1,19 +1,19 @@
-""" Producer module """
+"""Producer module"""
 
-from src.exception import ConnectionIsNoneException
+from src.exception import SocketIsNoneException
 from .client import SMSClient
 from ..server.core.kernel import Response
 
 
 class SMSProducer(SMSClient):
-    """ SMS Producer impl class which extends SMSClient """
+    """SMS Producer impl class which extends SMSClient"""
 
-    def produce(self, topic:str, message:any) -> Response:
-        """ Produce message to the topic """
-        if self._conn is None:
-            raise ConnectionIsNoneException()
-        
+    def produce(self, topic: str, message: bytes) -> Response:
+        """Produce message to the topic"""
+        if self._sock is None:
+            raise SocketIsNoneException()
+
         # make a protocol
-        packet = packet_gen(topic, message)
-        response = self._conn.send(packet)
+        packet = self.merge_topic_payload(topic, message)
+        response = self._sock.send(packet)
         return response
