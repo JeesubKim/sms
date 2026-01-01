@@ -33,12 +33,14 @@ class SMSServer(threading.Thread):
                 topic.add_queue(transaction)
 
         # init tcp server
-        self._conn = Socket(self._config.socket.host, self._config.socket.port)
+        self._conn = Socket(self._config.socket.ip, self._config.socket.port)
         self._conn.serve(self.message_handler, not self._stop_event.is_set())
 
     def message_handler(self, socket: Socket, data: any):
         """Message handler when new message arrives"""
 
+        print("received", data)
+        socket.send("Hi".encode("utf-8"))
         # parse data
         # pass message to the proper topics
         # send ack or nack using socket

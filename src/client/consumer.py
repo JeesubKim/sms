@@ -1,7 +1,7 @@
 """Consumer module"""
 
 from src.exception import SocketIsNoneException
-from .client import SMSClient
+from .sms_client import SMSClient
 import time
 
 

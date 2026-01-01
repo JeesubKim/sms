@@ -97,17 +97,17 @@ class BinLog:
         # topic
         transaction_bytes += transaction.header.topic.encode("utf-8")
 
-        transaction_bytes += len(transaction.header.producer.name).to_bytes(
+        transaction_bytes += len(transaction.header.producer.host).to_bytes(
             4, byteorder="big", signed=False
         )
 
         # producer
-        transaction_bytes += transaction.header.producer.name.encode("utf-8")
+        transaction_bytes += transaction.header.producer.host.encode("utf-8")
 
-        transaction_bytes += len(transaction.header.producer.host).to_bytes(
+        transaction_bytes += len(transaction.header.producer.ip).to_bytes(
             4, byteorder="big", signed=False
         )
-        transaction_bytes += transaction.header.producer.host.encode("utf-8")
+        transaction_bytes += transaction.header.producer.ip.encode("utf-8")
 
         transaction_bytes += transaction.header.producer.port.to_bytes(
             4, byteorder="big", signed=False

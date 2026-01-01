@@ -1,9 +1,9 @@
 socket_server:
-  ip: "localhost"
+  ip: "127.0.0.1"
   port: 9000
 
 web_server:
-  ip: "localhost"
+  ip: "127.0.0.1"
   port: 8080
 
 topics:

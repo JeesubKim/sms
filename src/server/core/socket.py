@@ -12,32 +12,31 @@ from server.system_logger import SLOG
 class Socket:
     """Socket Manager"""
 
-    def __init__(self, host: str, port: int):
-        self._host = host
+    def __init__(self, ip: str, port: int):
+        self._ip = ip
         self._port = port
         self._connections = []
 
     def serve(self, message_handler, condition: bool):
         """Serve"""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((self._host, self._port))
+            s.bind((self._ip, self._port))
 
             while condition:
                 s.listen()
 
                 conn, addr = s.accept()
 
-                with conn:
-                    print(f"Connected by {addr}")
+                print(f"Connected by {addr}")
 
-                    connection = Connection(
-                        conn,
-                        message_handler,
-                        lambda: self._connections.remove(connection),
-                    )
+                connection = Connection(
+                    conn,
+                    message_handler,
+                    lambda: self._connections.remove(connection),
+                )
 
-                    self._connections.append(connection)
-                    connection.start()
+                self._connections.append(connection)
+                connection.start()
 
     def send(self, data):
         """Send message"""
@@ -54,7 +53,7 @@ class Socket:
 
     def _connect(self) -> socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((self._host, self._port))
+        sock.connect((self._ip, self._port))
         return sock
 
 
@@ -71,7 +70,7 @@ class Connection(threading.Thread):
         self._on_close_listener = on_close_listener
 
     def run(self):
-        while not self._stop_event:
+        while not self._stop_event.is_set():
             data = self._sock.recv(1024)
             if not self._message_handler:
                 SLOG.error(f"{self._message_handler} is None, Receiver is closed")
