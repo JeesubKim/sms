@@ -7,3 +7,7 @@ class SocketIsNoneException(Exception):
 
 class UnexpectedModeStringValue(Exception):
     """Undefined Mode String Value"""
+
+
+class ClassNameDoesNotMatch(Exception):
+    """Class Name Does Not Match"""

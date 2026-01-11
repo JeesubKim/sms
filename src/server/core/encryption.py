@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Self
-from server.core.protocol import ProtocolPayload
+from server.core.protocol.base import ProtocolPayload
 
 
 class BaseEncryption(ABC):
