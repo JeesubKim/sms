@@ -6,10 +6,9 @@ from server.core.protocol.base import (
 )
 from server.core.protocol.types import (
     RequestProtocol,
-    BaseProtocol,
-    get_base_protocol_class_by_name,
+    ResponseProtocol,
+    get_request_response_protocol_class_by_name,
 )
-from server.core.encryption import NoneEncyption
 
 
 class TestProtocol(unittest.TestCase):
@@ -38,14 +37,20 @@ class TestProtocol(unittest.TestCase):
             "this is a string type of sample data",
         )
 
-    def test_deserialization(self):
-        """"""
+    def test_request_protocol_deserialization(self):
+        """request protocol deserialization test using get_request_response_protocol_class_by_name"""
         received_data = b'{"__name__": "RequestProtocol", "header": {"__name__": "ProtocolHeader", "message_id": 0, "repeat": 0}, "payload": {"__name__": "ProtocolPayload", "data": "dGhpcyBpcyBhIHN0cmluZyB0eXBlIG9mIHNhbXBsZSBkYXRh"}}'
 
-        _class = get_base_protocol_class_by_name(received_data)
+        _class = get_request_response_protocol_class_by_name(received_data)
 
         self.assertIs(_class, RequestProtocol)
 
-    def test_response(self): ...
+    def test_response_protocol_deserialization(self):
+        """response protocol deserialization test using get_request_response_protocol_class_by_name"""
+        received_data = b'{"__name__": "ResponseProtocol", "header": {"__name__": "ProtocolHeader", "message_id": 0, "repeat": 0}, "payload": {"__name__": "ProtocolPayload", "data": "dGhpcyBpcyBhIHN0cmluZyB0eXBlIG9mIHNhbXBsZSBkYXRh"}}'
+
+        _class = get_request_response_protocol_class_by_name(received_data)
+
+        self.assertIs(_class, ResponseProtocol)
 
     def test_serialization(self): ...

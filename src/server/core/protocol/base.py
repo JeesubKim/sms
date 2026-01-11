@@ -35,14 +35,15 @@ class ProtocolHeader:
         return cls(
             message_id=data["message_id"],
             repeat=data["repeat"],
-            # encryption=BaseEncryption.from_dict(data["encryption"]),
         )
 
 
+@dataclass
 class ProtocolRequestHeader(ProtocolHeader):
     """Protocol Request Header"""
 
 
+@dataclass
 class ProtocolResponseHeader(ProtocolHeader):
     """Protocol Response Header"""
 

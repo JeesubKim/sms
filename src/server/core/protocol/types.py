@@ -1,18 +1,34 @@
+from abc import abstractmethod
 from typing import Self
 from dataclasses import dataclass
 import json
-from server.core.protocol.base import BaseProtocol, ProtocolRequestHeader, Access
+from server.core.protocol.base import (
+    BaseProtocol,
+    ProtocolRequestHeader,
+    ProtocolResponseHeader,
+    Access,
+)
 from exception import ClassNameDoesNotMatch
 
 
-class RequestProtocol(BaseProtocol):
-    """Request"""
-
-    header: ProtocolRequestHeader
+class SerializableProtocol(BaseProtocol):
+    """Serializable Protocol"""
 
     def serialize(self) -> bytes:
         """serialize to bytes"""
         return json.dumps(self.to_dict()).encode("utf-8")
+
+    @classmethod
+    @abstractmethod
+    def deserialize(cls, data: bytes) -> Self:
+        """deserialize from bytes"""
+        raise NotImplementedError()
+
+
+class RequestProtocol(SerializableProtocol):
+    """Request"""
+
+    header: ProtocolRequestHeader
 
     @classmethod
     def deserialize(cls, data: bytes) -> Self:
@@ -20,8 +36,15 @@ class RequestProtocol(BaseProtocol):
         return RequestProtocol.from_dict(json.loads(data.decode("utf-8")))
 
 
-class ResponseProtocol(BaseProtocol):
+class ResponseProtocol(SerializableProtocol):
     """Response"""
+
+    header: ProtocolResponseHeader
+
+    @classmethod
+    def deserialize(cls, data: bytes) -> Self:
+        """deserialize from bytes"""
+        return ResponseProtocol.from_dict(json.loads(data.decode("utf-8")))
 
 
 @dataclass
@@ -72,7 +95,7 @@ PROTOCOL_REGISTRY = {
 }
 
 
-def get_base_protocol_class_by_name(data: bytes) -> Self:
+def get_request_response_protocol_class_by_name(data: bytes) -> Self:
     """Class finder"""
     data_dict = json.loads(data.decode("utf-8"))
     classname = data_dict.get("__name__")
