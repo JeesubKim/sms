@@ -52,5 +52,3 @@ class TestProtocol(unittest.TestCase):
         _class = get_request_response_protocol_class_by_name(received_data)
 
         self.assertIs(_class, ResponseProtocol)
-
-    def test_serialization(self): ...
