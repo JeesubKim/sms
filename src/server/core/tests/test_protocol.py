@@ -1,3 +1,5 @@
+"""Protocol test"""
+
 import unittest
 
 from server.core.protocol.base import (
