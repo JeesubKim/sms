@@ -12,3 +12,8 @@ topics:
   
   - name: default_queue
     mode: queue
+
+queue_settings:
+  ack_mode_default: manual
+  ack_timeout_ms: 60000
+  auto_ack_delay_ms: 30000

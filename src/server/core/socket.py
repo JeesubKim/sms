@@ -41,13 +41,13 @@ class Socket:
     def send(self, data):
         """Send message"""
         sock = self._connect()
-        sock.sendall(data)
+        Socket.send_framed(sock, data)
         return sock
 
     def send_and_wait(self, data):
         """Send and wait for data"""
         sock = self.send(data)
-        recv = sock.recv(1024)
+        recv = Socket.recv_framed(sock)
         sock.close()
         return recv
 
@@ -55,6 +55,33 @@ class Socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self._ip, self._port))
         return sock
+
+    @staticmethod
+    def _recv_exact(sock: socket.socket, size: int) -> bytes | None:
+        """Receive exact number of bytes from socket"""
+        buf = b""
+        while len(buf) < size:
+            chunk = sock.recv(size - len(buf))
+            if not chunk:
+                return None
+            buf += chunk
+        return buf
+
+    @staticmethod
+    def recv_framed(sock: socket.socket) -> bytes | None:
+        """Receive length-prefixed frame"""
+        header = Socket._recv_exact(sock, 4)
+        if header is None:
+            return None
+        length = int.from_bytes(header, "big", signed=False)
+        if length == 0:
+            return b""
+        return Socket._recv_exact(sock, length)
+
+    @staticmethod
+    def send_framed(sock: socket.socket, data: bytes) -> None:
+        """Send length-prefixed frame"""
+        sock.sendall(len(data).to_bytes(4, "big", signed=False) + data)
 
 
 class Connection(threading.Thread):
@@ -71,7 +98,9 @@ class Connection(threading.Thread):
 
     def run(self):
         while not self._stop_event.is_set():
-            data = self._sock.recv(1024)
+            data = Socket.recv_framed(self._sock)
+            if data is None:
+                break
             if not self._message_handler:
                 SLOG.error(f"{self._message_handler} is None, Receiver is closed")
                 break

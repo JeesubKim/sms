@@ -48,12 +48,9 @@ class TestProcedure(unittest.TestCase):
 
         bp.handle("abc")
         time.sleep(1.1)
-
         bp.handle("def")
         time.sleep(1.1)
-
         bp.stop()
-
         bp.join()
 
         self.assertEqual(bp.called, 2)

@@ -1,8 +1,7 @@
 """Consumer module"""
 
-from src.exception import SocketIsNoneException
+from exception import SocketIsNoneException
 from .sms_client import SMSClient
-import time
 
 
 class SMSConsumer(SMSClient):
@@ -18,28 +17,53 @@ class SMSConsumer(SMSClient):
     # No, consumer can always send offset, server can just ignore it based on the mode set in the topic
     # Is this the right way?
     # It seems not to be the best, but it can reduce the complexity of implementation on the consumer side
-    def consume_once(self, topic, offset):
-        if self._sock is None:
+    def consume_broadcast(self, topic: str, offset: int = 0) -> dict:
+        if self._socket_manager is None:
             raise SocketIsNoneException()
+        payload = {"type": "consume", "topic": topic, "mode": "broadcast", "offset": offset}
+        return self._send_request(payload)
 
-        packet = packet_gen(CONSUMER, topic, offset)
-
-        recv = self._sock.send_and_wait()
-
-        return recv
-
-    def consume_listening(self, topic: str, callback):
-        if self._sock is None:
+    def consume_queue(
+        self,
+        topic: str,
+        consumer_id: str,
+        ack_mode: str | None = None,
+        ack_timeout_ms: int | None = None,
+    ) -> dict:
+        if self._socket_manager is None:
             raise SocketIsNoneException()
+        payload = {
+            "type": "consume",
+            "topic": topic,
+            "mode": "queue",
+            "consumer_id": consumer_id,
+        }
+        if ack_mode is not None:
+            payload["ack_mode"] = ack_mode
+        if ack_timeout_ms is not None:
+            payload["ack_timeout_ms"] = ack_timeout_ms
+        return self._send_request(payload)
 
-        packet = packet_gen(CONSUMER, topic, offset)
+    def ack(self, topic: str, consumer_id: str, message_id: str) -> dict:
+        if self._socket_manager is None:
+            raise SocketIsNoneException()
+        payload = {
+            "type": "ack",
+            "topic": topic,
+            "mode": "queue",
+            "consumer_id": consumer_id,
+            "message_id": message_id,
+        }
+        return self._send_request(payload)
 
-        sock = self._sock.send(packet)
-        self.is_listening = True
-
-        while self.is_listening:
-            recv = sock.recv(1024)
-            callback(recv)
-            time.sleep(1)
-
-        sock.close()
+    def nack(self, topic: str, consumer_id: str, message_id: str) -> dict:
+        if self._socket_manager is None:
+            raise SocketIsNoneException()
+        payload = {
+            "type": "nack",
+            "topic": topic,
+            "mode": "queue",
+            "consumer_id": consumer_id,
+            "message_id": message_id,
+        }
+        return self._send_request(payload)

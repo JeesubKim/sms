@@ -11,7 +11,7 @@ import base64
 class ProtocolHeader:
     """Protocol default header"""
 
-    message_id: int
+    message_id: str
     repeat: int = 0  # 0 means no repeat
     # encryption: BaseEncryption
 

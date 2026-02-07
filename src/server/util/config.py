@@ -31,6 +31,9 @@ class ServerConfig:
     socket: Server
     web: Server
     topics: list[TopicConfig]
+    queue_ack_mode_default: str
+    queue_ack_timeout_ms: int
+    queue_auto_ack_delay_ms: int
 
 
 def read_config():
@@ -54,4 +57,7 @@ def read_config():
             TopicConfig(name=t["name"], mode=Mode.get_from_str(t["mode"]))
             for t in config["topics"]
         ],
+        queue_ack_mode_default=str(config.get("queue_settings", {}).get("ack_mode_default", "manual")),
+        queue_ack_timeout_ms=int(config.get("queue_settings", {}).get("ack_timeout_ms", 60000)),
+        queue_auto_ack_delay_ms=int(config.get("queue_settings", {}).get("auto_ack_delay_ms", 30000)),
     )

@@ -16,7 +16,13 @@ class SystemType(Enum):
 class BaseProcedure(threading.Thread):
     """Base Procedure"""
 
-    def __init__(self, system_type: SystemType, default_timer: int = 2000):
+    def __init__(
+        self,
+        system_type: SystemType,
+        default_timer: int = 2000,
+        steps: list = None,
+        callback=None,
+    ):
         super().__init__(daemon=True)
         self._system_type = system_type
         self._timer = default_timer  # ms
@@ -25,6 +31,8 @@ class BaseProcedure(threading.Thread):
         self._buffer = None
         self._ndi = False
         self._prev_ndi = False
+        self.steps = steps if steps else []  # initialization of steps
+        self._callback = callback
 
     def handle(self, data: any):
         """Function to pass data"""
@@ -32,12 +40,12 @@ class BaseProcedure(threading.Thread):
         self._ndi = not self._ndi
 
     @abstractmethod
-    def run_impl_server(self):
+    def run_impl_server(self) -> bool:
         """Function to be called in run function, when ndi is toggled"""
         raise NotImplementedError()
 
     @abstractmethod
-    def run_impl_client(self):
+    def run_impl_client(self) -> bool:
         """Function to be called in run function, when ndi is toggled"""
         raise NotImplementedError()
 

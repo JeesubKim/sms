@@ -1,10 +1,8 @@
 """SMS Client Abstract class"""
 
-import time
+import json
 from abc import ABC
 from server.core.socket import Socket
-from server.core.binlog import TransactionLog, TransactionLogHeader, BinLog
-from server.util.config import Server
 
 HOST = "Random"
 IP = "127.0.0.1"
@@ -25,20 +23,14 @@ class SMSClient(ABC):
         """Setter"""
         self.is_listening = value
 
-    def merge_topic_payload(self, topic: str, payload: bytes) -> TransactionLog:
-        """Default payload generator"""
-
-        return BinLog.transaction_to_bytes(
-            TransactionLog(
-                header=TransactionLogHeader(
-                    timestamp=int(time.time()),
-                    topic=topic,
-                    producer=Server(host=self._host, ip=self._ip, port=self._port),
-                    payload_size=len(payload),
-                ),
-                data=payload,
-            )
+    def _send_request(self, payload: dict) -> dict:
+        """Send request as JSON and parse response"""
+        if self._socket_manager is None:
+            raise Exception("Socket is not initialized")
+        response_bytes = self._socket_manager.send_and_wait(
+            json.dumps(payload).encode("utf-8")
         )
+        return json.loads(response_bytes.decode("utf-8"))
 
     def init(self) -> Socket:
         """Socket connection method"""

@@ -25,6 +25,7 @@ class TransactionLogHeader:
 
     timestamp: int
     topic: str
+    message_id: str
     producer: Server
     payload_size: int
 
@@ -97,6 +98,12 @@ class BinLog:
         # topic
         transaction_bytes += transaction.header.topic.encode("utf-8")
 
+        transaction_bytes += len(transaction.header.message_id).to_bytes(
+            4, byteorder="big", signed=False
+        )
+
+        transaction_bytes += transaction.header.message_id.encode("utf-8")
+
         transaction_bytes += len(transaction.header.producer.host).to_bytes(
             4, byteorder="big", signed=False
         )
@@ -150,50 +157,72 @@ class BinLog:
 
         for _ in range(payload_size):
             start = ptr
-            timestamp = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
-            ptr += 4
 
-            topic_length = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
-            ptr += 4
+            def _parse(with_message_id: bool):
+                nonlocal ptr
+                _ptr = ptr
+                timestamp = int.from_bytes(data[_ptr : _ptr + 4], byteorder="big")
+                _ptr += 4
 
-            topic = data[ptr : ptr + topic_length].decode("utf-8")
-            ptr += topic_length
+                topic_length = int.from_bytes(data[_ptr : _ptr + 4], byteorder="big")
+                _ptr += 4
 
-            producer_name_length = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
-            ptr += 4
-            producer_name = data[ptr : ptr + producer_name_length].decode("utf-8")
-            ptr += producer_name_length
-            producer_host_length = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
-            ptr += 4
-            producer_host = data[ptr : ptr + producer_host_length].decode("utf-8")
-            ptr += producer_host_length
-            producer_port = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
-            ptr += 4
-            transaction_payload_size = int.from_bytes(
-                data[ptr : ptr + 4], byteorder="big"
-            )
-            ptr += 4
+                topic = data[_ptr : _ptr + topic_length].decode("utf-8")
+                _ptr += topic_length
 
-            transaction_data = data[ptr : ptr + transaction_payload_size]
+                if with_message_id:
+                    message_id_length = int.from_bytes(data[_ptr : _ptr + 4], byteorder="big")
+                    _ptr += 4
+                    message_id = data[_ptr : _ptr + message_id_length].decode("utf-8")
+                    _ptr += message_id_length
+                else:
+                    message_id = ""
 
-            ptr += transaction_payload_size
-            crc = crc32(data[start:ptr])
-            stored_crc = int.from_bytes(data[ptr : ptr + 4], byteorder="big")
-            ptr += 4
-
-            if crc != stored_crc:
-                continue
-            blog.append(
-                TransactionLog(
-                    TransactionLogHeader(
-                        timestamp,
-                        topic,
-                        Server(producer_name, producer_host, producer_port),
-                        transaction_payload_size,
-                    ),
-                    transaction_data,
+                producer_name_length = int.from_bytes(data[_ptr : _ptr + 4], byteorder="big")
+                _ptr += 4
+                producer_name = data[_ptr : _ptr + producer_name_length].decode("utf-8")
+                _ptr += producer_name_length
+                producer_host_length = int.from_bytes(data[_ptr : _ptr + 4], byteorder="big")
+                _ptr += 4
+                producer_host = data[_ptr : _ptr + producer_host_length].decode("utf-8")
+                _ptr += producer_host_length
+                producer_port = int.from_bytes(data[_ptr : _ptr + 4], byteorder="big")
+                _ptr += 4
+                transaction_payload_size = int.from_bytes(
+                    data[_ptr : _ptr + 4], byteorder="big"
                 )
-            )
+                _ptr += 4
+
+                transaction_data = data[_ptr : _ptr + transaction_payload_size]
+                _ptr += transaction_payload_size
+
+                crc = crc32(data[start:_ptr])
+                stored_crc = int.from_bytes(data[_ptr : _ptr + 4], byteorder="big")
+                _ptr += 4
+                return (
+                    crc == stored_crc,
+                    _ptr,
+                    TransactionLog(
+                        TransactionLogHeader(
+                            timestamp,
+                            topic,
+                            message_id,
+                            Server(producer_name, producer_host, producer_port),
+                            transaction_payload_size,
+                        ),
+                        transaction_data,
+                    ),
+                )
+
+            ok, new_ptr, transaction = _parse(True)
+            if not ok:
+                # fallback to legacy format (no message_id)
+                ok, new_ptr, transaction = _parse(False)
+
+            ptr = new_ptr
+            if not ok:
+                continue
+            blog.append(transaction)
         # read payloads
         assert blog.get_size() == payload_size
 
@@ -241,7 +270,11 @@ if __name__ == "__main__":
         "test_topic",
         TransactionLog(
             TransactionLogHeader(
-                1735123456, "test_topic", Server("Test_server", "localhost", 9000), 30
+                1735123456,
+                "test_topic",
+                "test_message_id_1",
+                Server("Test_server", "localhost", 9000),
+                30,
             ),
             os.urandom(30),
         ),
@@ -250,7 +283,11 @@ if __name__ == "__main__":
         "test_topic",
         TransactionLog(
             TransactionLogHeader(
-                1735123456, "test_topic", Server("Test_server", "localhost", 9000), 30
+                1735123456,
+                "test_topic",
+                "test_message_id_2",
+                Server("Test_server", "localhost", 9000),
+                30,
             ),
             os.urandom(30),
         ),
@@ -259,7 +296,11 @@ if __name__ == "__main__":
         "test_topic",
         TransactionLog(
             TransactionLogHeader(
-                1735123456, "test_topic", Server("Test_server", "localhost", 9000), 30
+                1735123456,
+                "test_topic",
+                "test_message_id_3",
+                Server("Test_server", "localhost", 9000),
+                30,
             ),
             os.urandom(30),
         ),
@@ -268,7 +309,11 @@ if __name__ == "__main__":
         "test_topic",
         TransactionLog(
             TransactionLogHeader(
-                1735123456, "test_topic", Server("Test_server", "localhost", 9000), 30
+                1735123456,
+                "test_topic",
+                "test_message_id_4",
+                Server("Test_server", "localhost", 9000),
+                30,
             ),
             os.urandom(30),
         ),
